@@ -39,6 +39,13 @@ std::mutex lock;
 std::vector<std::thread> threads;
 
 static int closeSocket(uint64_t fd) {
+    linger lingerStruct;
+
+    lingerStruct.l_onoff = 1;
+    lingerStruct.l_linger = 0;
+    setsockopt(fd, SOL_SOCKET, SO_LINGER,
+               (char *) &lingerStruct, sizeof(lingerStruct));
+
 #ifdef OS_WINDOWS
     return closesocket(fd);
 #else
