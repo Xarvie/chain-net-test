@@ -33,7 +33,7 @@
 
 std::mutex lock;
 
-#define MAXFD 100
+#define MAXFD 50
 
 std::vector<std::thread> threads;
 
@@ -69,7 +69,7 @@ int main() {
     signal(SIGPIPE, SIG_IGN);
 #endif
 
-    for (int x = 0; x < 10; x++) {
+    for (int x = 0; x < 20; x++) {
         threads.emplace_back([] {
             int ret = 0;
             uint64_t sock[MAXFD];
