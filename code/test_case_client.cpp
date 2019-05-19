@@ -1,3 +1,4 @@
+#include "SystemReader.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,7 +6,7 @@
 
 #if defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-
+#define FD_SETSIZE  1024
 #include<WinSock2.h>
 #include <MSWSock.h>
 #include<Windows.h>
@@ -37,8 +38,17 @@ std::mutex lock;
 
 std::vector<std::thread> threads;
 
-inline int getSockError() {
+static int closeSocket(uint64_t fd) {
 #ifdef OS_WINDOWS
+    return closesocket(fd);
+#else
+    return close((int)fd);
+#endif
+}
+
+
+inline int getSockError() {
+#ifdef WIN32
     return WSAGetLastError();
 #else
     return errno;
@@ -58,8 +68,6 @@ inline int IsEagain() {
 }
 
 int main() {
-
-
 #ifdef OS_WINDOWS
     WORD ver = MAKEWORD(2, 2);
     WSADATA dat;
@@ -91,13 +99,13 @@ int main() {
                                sizeof(nodelay)) < 0)
                     printf("err: nodelay");
 #if defined(OS_WINDOWS)
-                unsigned long ul = 1;
-                ret = ioctlsocket(clientFd, FIONBIO, (unsigned long *) &ul);
-                if (ret == SOCKET_ERROR)
-                    printf("err: ioctlsocket");
+                //unsigned long ul = 1;
+                //ret = ioctlsocket(sock[i], FIONBIO, (unsigned long *) &ul);
+                //if (ret == SOCKET_ERROR)
+                //    printf("err: ioctlsocket");
 #else
-                int flags = fcntl(sock[i], F_GETFL, 0);
-                if (flags < 0) printf("err: fcntl");
+                //int flags = fcntl(sock[i], F_GETFL, 0);
+                //if (flags < 0) printf("err: fcntl");
 
                 //ret = fcntl(sock[i], F_SETFL, flags | O_NONBLOCK);
                 //if (ret < 0) printf("err: fcntl");
@@ -119,8 +127,8 @@ int main() {
                         //std::this_thread::sleep_for(std::chrono::milliseconds(1));
                         continue;
                     }
-                    std::cout << "a-" << errno << std::endl;
-                    close(sock[i]);
+                    std::cout << "a-" << getSockError() << std::endl;
+                    closeSocket(sock[i]);
                     sock[i] = 0;
                 }
                 i++;
@@ -161,8 +169,8 @@ int main() {
                                     continue;
                                 } else {
 
-                                    std::cout << "b-" << errno << std::endl;
-                                    close(sock[i]);
+                                    std::cout << "b-" << getSockError() << std::endl;
+                                    closeSocket(sock[i]);
                                     sock[i] = 0;
                                 }
                             }
@@ -171,8 +179,8 @@ int main() {
                                     continue;
                                 } else {
 
-                                    std::cout << "c-" << errno << std::endl;
-                                    close(sock[i]);
+                                    std::cout << "c-" << getSockError() << std::endl;
+                                    closeSocket(sock[i]);
                                     sock[i] = 0;
                                 }
                             }
